@@ -1,5 +1,15 @@
 import { createCanvas, type Image, loadImage, type SKRSContext2D } from "@napi-rs/canvas";
 
+export class MinecraftSkinResolveError extends Error {
+  constructor(
+    public readonly code: | "profile_not_found" | "profile_api_error" | "session_api_error" | "textures_missing" | "skin_missing" | "skin_fetch_error",
+    message: string,
+  ) {
+    super(message);
+    this.name = "MinecraftSkinError";
+  }
+}
+
 type MinecraftProfile = {
   id: string;
   name: string;
@@ -57,19 +67,19 @@ async function resolveSkin(username: string): Promise<Image> {
   const sessionProfile = await fetchSessionProfile(uuid);
   const texturesProperty = sessionProfile.properties.find((property) => property.name === "textures");
   if (!texturesProperty) {
-    throw new Error(`No textures property found for ${username}`);
+    throw new MinecraftSkinResolveError("textures_missing", `No textures property found for ${username}`);
   }
 
   const decoded = Buffer.from(texturesProperty.value, "base64").toString("utf-8");
   const textures = JSON.parse(decoded) as TexturesPayload;
   const skinUrl = textures.textures?.SKIN?.url;
   if (!skinUrl) {
-    throw new Error(`No skin URL found for ${username}`);
+    throw new MinecraftSkinResolveError("skin_missing", `No skin URL found for ${username}`);
   }
 
   const response = await fetch(skinUrl);
   if (!response.ok) {
-    throw new Error(`Failed to fetch skin for ${username}: ${response.status}`);
+    throw new MinecraftSkinResolveError("skin_fetch_error", `Failed to fetch skin for ${username}: ${response.status}`);
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
@@ -78,8 +88,10 @@ async function resolveSkin(username: string): Promise<Image> {
 
 async function fetchMinecraftProfile(username: string): Promise<MinecraftProfile> {
   const response = await fetch(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(username)}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch Minecraft profile for ${username}: ${response.status}`);
+  if (response.status === 404) {
+    throw new MinecraftSkinResolveError("profile_not_found", `Minecraft profile not found for ${username}`);
+  } else if (!response.ok) {
+    throw new MinecraftSkinResolveError("profile_api_error", `Failed to fetch Minecraft profile for ${username}: ${response.status}`);
   }
 
   return (await response.json()) as MinecraftProfile;
@@ -88,7 +100,7 @@ async function fetchMinecraftProfile(username: string): Promise<MinecraftProfile
 async function fetchSessionProfile(uuid: string): Promise<SessionProfile> {
   const response = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`);
   if (!response.ok) {
-    throw new Error(`Failed to fetch session profile for ${uuid}: ${response.status}`);
+    throw new MinecraftSkinResolveError("session_api_error", `Failed to fetch session profile for ${uuid}: ${response.status}`);
   }
 
   return (await response.json()) as SessionProfile;

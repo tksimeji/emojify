@@ -1,6 +1,6 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
-import { executeMCSkin2EmojiCommand, mcskin2emojiCommand } from "./commands/mcskin2emoji.js";
-import { executeText2EmojiCommand, text2emojiCommand } from "./commands/text2emoji.js";
+import { buildMCSkin2EmojiCommand, executeMCSkin2EmojiCommand } from "./commands/mcskin2emoji.js";
+import { buildText2EmojiCommand, executeText2EmojiCommand } from "./commands/text2emoji.js";
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   client.once(Events.ClientReady, async (readyClient) => {
     console.log(`Successfully logged in as ${readyClient.user.tag}!`);
 
-    await readyClient.application.commands.set([text2emojiCommand, mcskin2emojiCommand]);
+    await readyClient.application.commands.set([buildText2EmojiCommand(), buildMCSkin2EmojiCommand()]);
     console.log(`Registered global slash commands`);
   });
 
