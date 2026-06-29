@@ -1,5 +1,6 @@
 import { type ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { provideTextEmoji } from "../providers/text.js";
+import { requireGuildPermission } from "../utils/command-helpers.js";
 
 const DEFAULT_COLOR = "#EC71A1";
 
@@ -11,8 +12,8 @@ const COLORS = [
   { name: "Blurple", value: "#5865F2" },
 ];
 
-export const textEmojiCommand = new SlashCommandBuilder()
-  .setName("text-emoji")
+export const text2emojiCommand = new SlashCommandBuilder()
+  .setName("text2emoji")
   .setDescription("Create a text emoji")
   .addStringOption((option) =>
     option.setName("text").setDescription("The text to display").setRequired(true).setMaxLength(8),
@@ -27,22 +28,9 @@ export const textEmojiCommand = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.CreateGuildExpressions)
   .toJSON();
 
-export async function executeTextEmojiCommand(interaction: ChatInputCommandInteraction) {
-  const guild = interaction.guild;
+export async function executeText2EmojiCommand(interaction: ChatInputCommandInteraction) {
+  const guild = await requireGuildPermission(interaction, PermissionFlagsBits.CreateGuildExpressions);
   if (!guild) {
-    await interaction.reply({
-      content: "This command can only be used in a server.",
-      ephemeral: true,
-    });
-    return;
-  }
-
-  const guildMember = await interaction.guild.members.fetch(interaction.user.id);
-  if (!guildMember.permissions.has(PermissionFlagsBits.CreateGuildExpressions)) {
-    await interaction.reply({
-      content: "You do not have permission to use this command.",
-      ephemeral: true,
-    });
     return;
   }
 
