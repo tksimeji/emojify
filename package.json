@@ -4,11 +4,14 @@
   "type": "module",
   "repository": "https://github.com/tksimeji/emoji-chan.git",
   "scripts": {
-    "dev": "tsx src/main.ts",
+    "dev": "tsx --env-file=.env.local src/main.ts",
     "build": "tsc",
     "lint": "biome lint",
     "format": "biome check .",
     "format:write": "biome format --write ."
+  },
+  "dependencies": {
+    "discord.js": "^14.26.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.1",
