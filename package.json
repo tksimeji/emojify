@@ -11,6 +11,8 @@
     "format:write": "biome format --write ."
   },
   "dependencies": {
+    "@fontsource/m-plus-rounded-1c": "^5.2.10",
+    "@napi-rs/canvas": "^1.0.1",
     "discord.js": "^14.26.4"
   },
   "devDependencies": {
