@@ -1,4 +1,5 @@
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits } from "discord.js";
+import { executeTextEmojiCommand, textEmojiCommand } from "./commands/text-emoji.js";
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -12,12 +13,25 @@ async function main(): Promise<void> {
     throw new Error("BOT_TOKEN not set");
   }
 
-  client.once("clientReady", (readyClient) => {
+  client.once(Events.ClientReady, async (readyClient) => {
     console.log(`Successfully logged in as ${readyClient.user.tag}!`);
+
+    await readyClient.application.commands.set([textEmojiCommand]);
+    console.log(`Registered global slash commands`);
   });
 
-  client.on("error", (error) => {
+  client.on(Events.Error, (error) => {
     console.error("Discord client error:", error);
+  });
+
+  client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.isChatInputCommand()) {
+      return;
+    }
+
+    if (interaction.commandName === "text-emoji") {
+      await executeTextEmojiCommand(interaction);
+    }
   });
 
   await client.login(token);
