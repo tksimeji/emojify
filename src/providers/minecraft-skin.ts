@@ -1,15 +1,5 @@
 import { createCanvas, type Image, loadImage, type SKRSContext2D } from "@napi-rs/canvas";
 
-export class MinecraftSkinResolveError extends Error {
-  constructor(
-    public readonly code: | "profile_not_found" | "profile_api_error" | "session_api_error" | "textures_missing" | "skin_missing" | "skin_fetch_error",
-    message: string,
-  ) {
-    super(message);
-    this.name = "MinecraftSkinError";
-  }
-}
-
 type MinecraftProfile = {
   id: string;
   name: string;
@@ -38,6 +28,22 @@ const HEAD_SIZE = 8;
 
 const HEAD_OVERLAY_X = 40;
 const HEAD_OVERLAY_Y = 8;
+
+export class MinecraftSkinResolveError extends Error {
+  constructor(
+    public readonly code:
+      | "profile_not_found"
+      | "profile_api_error"
+      | "session_api_error"
+      | "textures_missing"
+      | "skin_missing"
+      | "skin_fetch_error",
+    message: string,
+  ) {
+    super(message);
+    this.name = "MinecraftSkinError";
+  }
+}
 
 export async function provideMinecraftSkinEmoji({ username }: { username: string }): Promise<Buffer<ArrayBufferLike>> {
   const skin = await resolveSkin(username);
@@ -91,7 +97,10 @@ async function fetchMinecraftProfile(username: string): Promise<MinecraftProfile
   if (response.status === 404) {
     throw new MinecraftSkinResolveError("profile_not_found", `Minecraft profile not found for ${username}`);
   } else if (!response.ok) {
-    throw new MinecraftSkinResolveError("profile_api_error", `Failed to fetch Minecraft profile for ${username}: ${response.status}`);
+    throw new MinecraftSkinResolveError(
+      "profile_api_error",
+      `Failed to fetch Minecraft profile for ${username}: ${response.status}`,
+    );
   }
 
   return (await response.json()) as MinecraftProfile;
@@ -100,7 +109,10 @@ async function fetchMinecraftProfile(username: string): Promise<MinecraftProfile
 async function fetchSessionProfile(uuid: string): Promise<SessionProfile> {
   const response = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`);
   if (!response.ok) {
-    throw new MinecraftSkinResolveError("session_api_error", `Failed to fetch session profile for ${uuid}: ${response.status}`);
+    throw new MinecraftSkinResolveError(
+      "session_api_error",
+      `Failed to fetch session profile for ${uuid}: ${response.status}`,
+    );
   }
 
   return (await response.json()) as SessionProfile;

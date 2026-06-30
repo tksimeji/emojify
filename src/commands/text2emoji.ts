@@ -1,17 +1,16 @@
+import * as path from "node:path";
+import { tokenizerNode } from "@saeris/kuromoji";
 import {
   type ChatInputCommandInteraction,
   Locale,
   PermissionFlagsBits,
   type RESTPostAPIChatInputApplicationCommandsJSONBody,
   SlashCommandBuilder,
-} from 'discord.js';
-import {provideTextEmoji} from '../providers/text.js';
-import {
-  describeEmojiCreateError,
-  i18n,
-  requireBotExpressionPermission,
-  requireGuildPermission,
-} from '../utils/command-helpers.js';
+} from "discord.js";
+import { toRomaji } from "wanakana";
+import { provideTextEmoji } from "../providers/text.js";
+import { i18n, requireGuildPermission } from "../utils/command-helpers.js";
+import { describeEmojiCreateError, isValidEmojiName } from "../utils/emoji-helpers.js";
 
 const DEFAULT_COLOR = "#EC71A1";
 
@@ -26,14 +25,14 @@ const COLORS = [
 export function buildText2EmojiCommand(): RESTPostAPIChatInputApplicationCommandsJSONBody {
   return new SlashCommandBuilder()
     .setName("text2emoji")
-    .setDescription("Make a little custom emoji from text")
+    .setDescription("Make a custom emoji from text")
     .setDescriptionLocalization(Locale.Japanese, "文字から小さな絵文字をつくるよ")
     .setDefaultMemberPermissions(PermissionFlagsBits.CreateGuildExpressions)
     .addStringOption((option) =>
       option
         .setName("text")
         .setDescription("Text to place on the emoji")
-        .setDescriptionLocalization(Locale.Japanese, "絵文字にのせる文字")
+        .setDescriptionLocalization(Locale.Japanese, "絵文字にする文字")
         .setRequired(true)
         .setMaxLength(16),
     )
@@ -47,9 +46,9 @@ export function buildText2EmojiCommand(): RESTPostAPIChatInputApplicationCommand
     )
     .addStringOption((option) =>
       option
-        .setName("name")
-        .setDescription("Name for the new emoji")
-        .setDescriptionLocalization(Locale.Japanese, "新しい絵文字の名前")
+        .setName("register_as")
+        .setDescription("Register the emoji with this name")
+        .setDescriptionLocalization(Locale.Japanese, "この名前で絵文字を登録します")
         .setRequired(false)
         .setMaxLength(16),
     )
@@ -64,49 +63,48 @@ export async function executeText2EmojiCommand(interaction: ChatInputCommandInte
 
   const text = interaction.options.getString("text", true).trim();
   const color = interaction.options.getString("color", false) ?? DEFAULT_COLOR;
-  const name = resolveEmojiName(interaction.options.getString("name", false));
+  const registerAs = interaction.options.getString("register_as", false);
 
-  await interaction.deferReply({ ephemeral: true });
-  if (!(await requireBotExpressionPermission(interaction, guild))) {
+  if (registerAs && !isValidEmojiName(registerAs)) {
+    await interaction.reply(
+      i18n(interaction, {
+        [Locale.EnglishUS]: `\`${registerAs}\` is not a valid emoji name: https://support.discord.com/hc/en-us/articles/360036479811-How-to-Add-Custom-Emojis-on-Discord`,
+        [Locale.Japanese]: `\`${registerAs}\` は絵文字名として使用できません: https://support.discord.com/hc/en-us/articles/360036479811-How-to-Add-Custom-Emojis-on-Discord`,
+      }),
+    );
     return;
   }
 
+  await interaction.deferReply({ ephemeral: true });
+
   try {
-    const buffer = await provideTextEmoji({ text, color });
+    const attachment = await provideTextEmoji({ text, color });
+    const name = registerAs ?? (await convertToRomaji(text));
 
     const emoji = await guild.emojis.create({
-      attachment: buffer,
+      attachment,
       name,
       reason: `Created by ${interaction.user.tag}`,
     });
 
     await interaction.editReply(
       i18n(interaction, {
-        [Locale.EnglishUS]: `All set. ${emoji.toString()} is ready as \`:${emoji.name}:\`.`,
-        [Locale.Japanese]: `できあがり。${emoji.toString()} は \`:${emoji.name}:\` で使ってね。`,
+        [Locale.EnglishUS]: `All set. ${emoji.toString()} is registered as \`:${emoji.name}:\`.`,
+        [Locale.Japanese]: `できあがり。${emoji.toString()} を \`:${emoji.name}:\` として登録しました。`,
       }),
     );
   } catch (error) {
-    console.error("Failed to create text emoji:", error);
+    console.error("Failed to create emoji:", error);
     await interaction.editReply(describeEmojiCreateError(interaction, error));
   }
 }
 
-function resolveEmojiName(inputName: string | null) {
-  return normalizeEmojiName(inputName ?? "") || `emoji_${Date.now().toString(36)}`;
-}
+async function convertToRomaji(text: string) {
+  const dicPath = path.resolve(process.cwd(), "node_modules/@saeris/kuromoji/dict");
 
-function normalizeEmojiName(value: string) {
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9_]+/g, "_")
-    .replaceAll(/^_+|_+$/g, "")
-    .slice(0, 32);
+  const tokenizer = await tokenizerNode(dicPath);
 
-  if (normalized.length >= 2) {
-    return normalized;
-  }
-
-  return normalized ? `emoji_${normalized}`.slice(0, 32) : "";
+  const tokens = tokenizer.tokenize(text);
+  const readingText = tokens.map((token) => token.reading ?? token.surface_form).join("");
+  return toRomaji(readingText);
 }
