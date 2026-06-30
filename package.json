@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "repository": "https://github.com/tksimeji/emojify.git",
+  "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "tsx --env-file=.env.local src/main.ts",
+    "start": "node dist/main.js",
     "build": "tsc",
     "lint": "biome lint",
     "format": "biome check .",

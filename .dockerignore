@@ -1,0 +1,9 @@
+.git
+.github
+.idea
+.env*
+node_modules
+dist
+coverage
+*.log
+docker/Dockerfile
