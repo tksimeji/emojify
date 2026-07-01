@@ -61,6 +61,10 @@ export async function executeText2EmojiCommand(interaction: ChatInputCommandInte
     return;
   }
 
+  console.log(
+    `${interaction.user.displayName} used /${interaction.commandName} in ${guild.name} (${guild.memberCount} members)`,
+  );
+
   const text = interaction.options.getString("text", true).trim();
   const color = interaction.options.getString("color", false) ?? DEFAULT_COLOR;
   const registerAs = interaction.options.getString("register_as", false);

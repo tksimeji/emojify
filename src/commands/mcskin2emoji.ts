@@ -40,6 +40,10 @@ export async function executeMCSkin2EmojiCommand(interaction: ChatInputCommandIn
     return;
   }
 
+  console.log(
+    `${interaction.user.displayName} used /${interaction.commandName} in ${guild.name} (${guild.memberCount} members)`,
+  );
+
   const username = interaction.options.getString("username", true).trim();
   const registerAs = interaction.options.getString("register_as", false);
 
