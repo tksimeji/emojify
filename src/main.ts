@@ -3,7 +3,7 @@ import { buildMCSkin2EmojiCommand, executeMCSkin2EmojiCommand } from "./commands
 import { buildText2EmojiCommand, executeText2EmojiCommand } from "./commands/text2emoji.js";
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
 });
 
 async function main(): Promise<void> {
@@ -49,9 +49,9 @@ async function main(): Promise<void> {
 
     await message.reply({
       content: [
-          `Hi ${message.author.displayName}, I'm ${botUser.displayName}.`,
-          "I can create custom Discord emojis from text and Minecraft skins.",
-          "Try `/text2emoji` or `/mcskin2emoji` to get started!",
+        `Hi ${message.author.displayName}, I'm ${botUser.displayName}.`,
+        "I can create custom Discord emojis from text and Minecraft skins.",
+        "Try `/text2emoji` or `/mcskin2emoji` to get started!",
       ].join("\n"),
     });
   });
