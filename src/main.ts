@@ -37,6 +37,25 @@ async function main(): Promise<void> {
     }
   });
 
+  client.on(Events.MessageCreate, async (message) => {
+    if (message.author.bot) {
+      return;
+    }
+
+    const botUser = client.user;
+    if (!botUser || !message.mentions.has(botUser)) {
+      return;
+    }
+
+    await message.reply({
+      content: [
+          `Hi ${message.author.displayName}, I'm ${botUser.displayName}.`,
+          "I can create custom Discord emojis from text and Minecraft skins.",
+          "Try `/text2emoji` or `/mcskin2emoji` to get started!",
+      ].join("\n"),
+    });
+  });
+
   await client.login(token);
 }
 
