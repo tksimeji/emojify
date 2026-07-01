@@ -15,10 +15,17 @@ async function main(): Promise<void> {
   }
 
   client.once(Events.ClientReady, async (readyClient) => {
-    console.log(`Successfully logged in as ${readyClient.user.tag}!`);
+    console.log(`Logged in as ${readyClient.user.tag}`);
+
+    console.log(`Connected to ${readyClient.guilds.cache.size} guild(s):`)
+    for (const guild of readyClient.guilds.cache.values()) {
+      console.log(`- ${guild.name} (${guild.memberCount} members)`)
+    }
 
     await readyClient.application.commands.set([buildText2EmojiCommand(), buildMCSkin2EmojiCommand()]);
     console.log(`Registered global slash commands`);
+
+    console.log("Ready!");
   });
 
   client.on(Events.Error, (error) => {
@@ -36,6 +43,11 @@ async function main(): Promise<void> {
       await executeMCSkin2EmojiCommand(interaction);
     }
   });
+
+  client.on(Events.GuildCreate, async (guild) => {
+    console.log(`Joined a new guild ${guild.name} (${guild.memberCount} members)`);
+    console.log(`Now serving ${client.guilds.cache.size} guilds`)
+  })
 
   client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) {
